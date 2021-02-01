@@ -1,0 +1,2 @@
+# CelestialNavigation
+The main task of a celestial navigation system is to guide a spacecraft to its destination following predetermined routes with the required precision and within the given time. This project is used to automate the process of determining the coordinates of the observer on a photograph of the night sky. Based on known coordinate positions and motion rules of celestial bodies, celestial navigation uses the astronomical coordinates of an observed object to determine the geographical position and other navigation parameters of a spacecraft.
