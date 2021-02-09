@@ -1,4 +1,4 @@
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, patches
 from skimage.feature import blob_dog, blob_log, blob_doh
 import math
 import skimage.io
@@ -13,7 +13,7 @@ class SkyImage:
         self.height, self.width = img.shape
         self.stars = self.extractStarsFromImage(img)
 
-        self.convertBrightness()
+        self.convertToBrightness()
 
     def __len__(self):
         return len(self.stars)
@@ -25,16 +25,15 @@ class SkyImage:
     def extractStarsFromImage(image):
         start_time = time.time()
 
-        stars = blob_dog(image, max_sigma=10, min_sigma=5, threshold=0.1)
+        stars = blob_log(image, max_sigma=10, min_sigma=5, threshold=0.1)
         stars[:, 2] *= math.sqrt(2)
 
         finish_time = time.time()
-
         print(finish_time - start_time)
 
-        return [Star(star[0], star[1], star[2]) for star in stars]
+        return [Star(star[1], star[0], star[2]) for star in stars]
 
-    def convertBrightness(self):
+    def convertToBrightness(self):
         stars_max = max(star.r for star in self.stars)
 
         for star in self.stars:
@@ -43,8 +42,9 @@ class SkyImage:
     def show(self, image):
         fig, ax = plt.subplots(1, 1)
         for star in self.stars:
-            c = plt.Circle((star.y, star.x), star.r + 5, color="red", linewidth=1, fill=False)
-            ax.add_patch(c)
+            if star.brightness >= 0.0:
+                c = patches.Circle((star.x, star.y), star.r + 5, color="red", linewidth=1, fill=False)
+                ax.add_patch(c)
 
         skimage.io.imshow(image)
         skimage.io.show()

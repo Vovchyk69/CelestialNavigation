@@ -6,4 +6,4 @@ class Star:
         self.brightness = 0
 
     def __repr__(self):
-        return 'x:{} - y:{} - r:{} - br:{}\n'.format(self.x, self.y, self.r, self.brightness)
+        return '\nx:{} - y:{} - r:{} - br:{}'.format(self.x, self.y, self.r, self.brightness)
