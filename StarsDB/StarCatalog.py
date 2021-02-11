@@ -2,9 +2,8 @@ import motor.motor_asyncio
 import pandas as pd
 import json
 
-from pymongo import MongoClient
 
-
+# a class to work with star database
 class StarCatalog:
     def __init__(self, connection, dbName=None, collectionName=None):
         self.dbName = dbName
@@ -14,11 +13,13 @@ class StarCatalog:
         self.db = self.client[self.dbName]
         self.collection = self.db[self.collectionName]
 
-    async def importCsvToDatabase(self, path):
-        print('bd')
+    async def importCsvToDatabaseAsync(self, path):
+        """
+        Import csv file to mongodb database
+        :param path: Path to csv file
+        :return: None
+        """
         content = pd.read_csv(path)
         content_json = json.loads(content.to_json(orient='records'))
 
         await self.collection.insert_many(content_json)
-        print('edn bd')
-
