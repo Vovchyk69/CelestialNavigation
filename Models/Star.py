@@ -4,6 +4,7 @@ class Star:
         self.y = y
         self.r = r
         self.brightness = 0
+        self.cartesian = []
 
     def __repr__(self):
         return '\nx:{} - y:{} - r:{} - br:{}'.format(self.x, self.y, self.r, self.brightness)

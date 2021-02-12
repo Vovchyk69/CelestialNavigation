@@ -15,6 +15,7 @@ class SkyImage:
         self.stars = self.extractStarsFromImage(img)
 
         self.convertToBrightness()
+        self.convertToSpherical()
 
     def __len__(self):
         return len(self.stars)
@@ -22,10 +23,9 @@ class SkyImage:
     def __getitem__(self, item):
         return self.stars[item]
 
-    @staticmethod
-    def extractStarsFromImage(image):
+    def extractStarsFromImage(self, image):
         """
-        Detect stars in image of night sky
+        Detect stars on image of the night sky
         :param image: Path image
         :return: array of stars
         """
@@ -49,6 +49,13 @@ class SkyImage:
 
         for star in self.stars:
             star.brightness = float(star.r) / stars_max
+
+    def convertToSpherical(self):
+        for star in self.stars:
+            radius = math.sqrt(star.x*star.x + star.y*star.y)
+            angle = math.atan2(star.y, star.x)
+            star.cartesian = [angle, radius]
+
 
     def show(self, image):
         """

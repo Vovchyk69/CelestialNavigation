@@ -6,7 +6,16 @@ from dotenv import load_dotenv
 import os
 
 
+async def process(image):
+    sky = SkyImage(image)
+    sky.show(image)
+
+
 def loadToDB():
+    """
+    Load stars to dataBase and extract stars async
+    :return: None
+    """
     catalog = StarCatalog(os.getenv("CONNECTION_STRING"), os.getenv("dbName"), os.getenv("collectionName"))
     start = time.time()
     loop = asyncio.get_event_loop()
@@ -22,11 +31,10 @@ def loadToDB():
     loop.close()
 
 
-async def process(image):
-    sky = SkyImage(image)
-    sky.show(image)
-
-
 if __name__ == "__main__":
     load_dotenv()
+
     # loadToDB()
+    connection = StarCatalog(os.getenv("CONNECTION_STRING"), os.getenv("dbName"), os.getenv("collectionName"))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(connection.findNearStars())
