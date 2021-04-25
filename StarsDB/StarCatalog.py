@@ -1,9 +1,11 @@
 import time
 import motor.motor_asyncio
+import numpy as np
 import pandas as pd
 import json
+import math
 from bson import SON
-from pymongo import MongoClient, GEO2D, GEOSPHERE
+from pymongo import GEO2D, GEOSPHERE
 
 
 # a class to work with star database
@@ -11,10 +13,11 @@ class StarCatalog:
     def __init__(self, connection, dbName=None, collectionName=None):
         self.dbName = dbName
         self.collectionName = collectionName
-
         self.client = motor.motor_asyncio.AsyncIOMotorClient(connection)
         self.db = self.client[self.dbName]
         self.collection = self.db[self.collectionName]
+        self.LookUpTable = self.db["LT2"]
+        self.Nq = 100
 
     async def importCsvToDatabaseAsync(self, path):
         """
@@ -28,18 +31,92 @@ class StarCatalog:
         await self.collection.insert_many(content_json)
 
     def createIndex(self, field):
-        self.collection.create_index([(field, GEO2D)])
+        self.collection.create_index([(field, GEOSPHERE)])
 
-    async def findNearStars(self, eps=0.3):
+    async def findNearStars(self, eps=5, mag=130):
         """
         Searching stars in the vicinity of each star in catalog
-        :param eps: vicinity
-        :return: None
+        @param eps: a vicinity
+        @param mag: default magnitude for filter stars
         """
+        self.createIndex('location')
         start = time.time()
-        async for element in self.collection.find():
-            query = {'location': SON([("$near", [element['dec'], element['ra']]), ("$maxDistance", eps)])}
-            result = self.collection.find(query)
+        filteredStars = self.collection.find({"proper": {'$ne': None}})
+        i = 0
+        async for star in filteredStars:
+            i += 1
+            query = {'location': SON(
+                [("$near", [star['dec'], star['ra']]), ("$maxDistance", eps)]), "dist": {"$lt": mag}, "mag": {"$lt": 5}}
 
-        end = time.time()
-        print(f"Time of searching star {end - start} s")
+            cursor = self.collection.find(query)
+            await self.buildHash(cursor, star)
+            print(i)
+
+        # print(i)
+        # end = time.time()
+        # print(f"Time of searching star {end - start} s")
+
+    async def buildHash(self, cursor, star, h=5):
+        """
+        Build hash which contains information about neighbours stars
+        @param star: Initial star
+        @param cursor: collection of filtered stars
+        @param h: a vicinity of star (default 5 degrees)
+        @return: None
+        """
+        i = 0
+        hash = ['0'] * self.Nq
+        async for item in cursor:
+            i += 1
+            distance = self.angularDistance(star['ra'], star['dec'], item['ra'], item['dec'])
+            hash[int(distance * self.Nq / h)] = '1'
+
+            self.UpdateLT(int(distance * self.Nq / h), item['id'])
+
+        # print(i)
+        # print(sum(map(lambda x: x == '1', hash)))
+        print("".join(hash))
+
+    def AddLT(self):
+        """
+        Creating LookUpTable to mongoDb database for star identification
+        @return: None
+        """
+
+        for value in range(self.Nq):
+            element = {"Nq": value, "Indexes": []}
+            self.LookUpTable.insert_one(element)
+
+    def UpdateLT(self, nq, index):
+        self.LookUpTable.update_one(
+            {'Nq': nq},
+            {
+                '$addToSet': {
+                    'Indexes': index
+                }
+            })
+
+    @staticmethod
+    def angularDistance(ra1, dec1, ra2, dec2):
+        """
+        Find an angular distance between two stars
+        :param ra1: right ascension (longitude) of first star
+        :param dec1: declination (latitude) of first star
+        :param ra2: right ascension (longitude) of first star
+        :param dec2: declination (latitude) of first star
+        :return: angular distance in degrees
+        """
+        distance = math.sin(math.radians(dec1)) * math.sin(math.radians(dec2)) + math.cos(
+            math.radians(dec1)) * math.cos(math.radians(dec2)) * math.cos(math.radians(ra1 - ra2))
+        return math.degrees(math.acos(round(distance, 8)))
+
+    async def identifyStar(self, hash):
+        array = []
+        for item in enumerate(hash):
+            if item[1] == '1':
+                star_from_db = await self.LookUpTable.find_one({'Nq': item[0]})
+                array += star_from_db['Indexes']
+
+        index = int(np.bincount(array).argmax())
+        result = await self.collection.find_one({'id': index})
+        print(result)
