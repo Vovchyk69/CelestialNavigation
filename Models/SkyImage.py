@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+import numpy as np
 from bson import SON
 from matplotlib import pyplot as plt, patches
 from pymongo import GEOSPHERE, GEO2D
@@ -9,7 +10,6 @@ import math
 import skimage.io
 import time
 from Models.Star import Star
-
 
 # a class that extract stars from sky image
 from CelestialNavigation.StarsDB.StarCatalog import StarCatalog
@@ -41,7 +41,7 @@ class SkyImage:
         """
         start_time = time.time()
 
-        stars = blob_log(image, max_sigma=10, min_sigma=3, threshold=0.1)
+        stars = blob_log(image, max_sigma=10, min_sigma=3, threshold=0.08)
         stars[:, 2] *= math.sqrt(2)
 
         finish_time = time.time()
@@ -69,8 +69,9 @@ class SkyImage:
 
     def findNearStar(self):
         connection = StarCatalog(os.getenv("CONNECTION_STRING"), os.getenv("dbName"), os.getenv("collectionName"))
+        i = 0
         for star in self.stars:
-            if star.brightness >= 1:
+            if star.brightness >= 0.85:
                 self.findStar(star, connection)
 
     # def buildHash(self, initialStar, h=5.51, eps=5):
@@ -97,7 +98,7 @@ class SkyImage:
     #     # print(sum(map(lambda x: x == '1', hash)))
     #     print("".join(hash))
 
-    def findStar(self, initialStar,connection, eps=43.1, h=5):
+    def findStar(self, initialStar, connection, eps=67, h=5):
         # eps = 43.1 !!!
         hash = ['0'] * 100
         vicinity = self.width / eps * h
@@ -108,7 +109,7 @@ class SkyImage:
                 self.filteredStars.append(star)
                 hash[int(distance * 100 / h)] = '1'
 
-        print("".join(hash))
+        # print("".join(hash))
         loop = asyncio.get_event_loop()
         loop.run_until_complete(connection.identifyStar(hash))
 

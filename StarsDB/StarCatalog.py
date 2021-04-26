@@ -33,7 +33,7 @@ class StarCatalog:
     def createIndex(self, field):
         self.collection.create_index([(field, GEOSPHERE)])
 
-    async def findNearStars(self, eps=5, mag=130):
+    async def findNearStars(self, eps=6, mag=130):
         """
         Searching stars in the vicinity of each star in catalog
         @param eps: a vicinity
@@ -42,21 +42,19 @@ class StarCatalog:
         self.createIndex('location')
         start = time.time()
         filteredStars = self.collection.find({"proper": {'$ne': None}})
-        i = 0
         async for star in filteredStars:
-            i += 1
             query = {'location': SON(
-                [("$near", [star['dec'], star['ra']]), ("$maxDistance", eps)]), "dist": {"$lt": mag}, "mag": {"$lt": 5}}
+                [("$near", [star['dec'], star['ra']]), ("$maxDistance", eps)]), "dist": {"$lt": mag},
+                "lum": {"$gt": 49}}
 
             cursor = self.collection.find(query)
             await self.buildHash(cursor, star)
-            print(i)
 
         # print(i)
         # end = time.time()
         # print(f"Time of searching star {end - start} s")
 
-    async def buildHash(self, cursor, star, h=5):
+    async def buildHash(self, cursor, star, h=6):
         """
         Build hash which contains information about neighbours stars
         @param star: Initial star
@@ -118,5 +116,10 @@ class StarCatalog:
                 array += star_from_db['Indexes']
 
         index = int(np.bincount(array).argmax())
+        # counts = np.bincount(array)
+        # tolist = list(counts)
+        # tolist.sort(reverse=True)
+        # print(tolist)
+        # print(np.argmax(counts))
         result = await self.collection.find_one({'id': index})
         print(result)
