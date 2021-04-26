@@ -7,8 +7,12 @@ from StarsDB.StarCatalog import StarCatalog
 from dotenv import load_dotenv
 import os
 import copy
-
-
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QPushButton
+from PyQt5.QtWidgets import QVBoxLayout
+from PyQt5.QtWidgets import QWidget
+import sys
 async def process(image):
     sky = SkyImage(image)
     sky.show(image)
@@ -65,3 +69,17 @@ if __name__ == "__main__":
     # connection.AddLT()
     # loop = asyncio.get_event_loop()
     # loop.run_until_complete(connection.findNearStars())
+
+    # connect = MongoClient(os.getenv("CONNECTION_STRING"))
+    # db = connect.Catalog
+    # # collection = db.Stars
+    # # collection.delete_one({'id':17062})
+    # table = db.LT2
+    # table.update_one(
+    #     {'Nq': 46},
+    #     {
+    #         '$addToSet': {
+    #             'Indexes': 36744
+    #         }
+    #     })
+    # 90 99 16 19 46
